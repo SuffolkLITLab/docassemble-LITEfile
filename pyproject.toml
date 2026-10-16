@@ -1,0 +1,35 @@
+[build-system]
+requires = [
+    "setuptools==80.9.0",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docassemble.LITEfile"
+version = "0.1.0"
+requires-python = ">=3.10"
+description = "Reusable Docassemble interview support for handing court documents to LITEfile."
+readme = "README.md"
+authors = [
+    { name = "Suffolk Legal Innovation and Technology Lab", email = "litlab@suffolk.edu" },
+]
+dependencies = [
+    "docassemble.AssemblyLine @ git+https://github.com/SuffolkLITLab/docassemble-AssemblyLine.git@main",
+    "requests>=2.31",
+]
+license = "MIT"
+license-files = [
+    "LICENSE",
+]
+
+[project.urls]
+Homepage = "https://github.com/SuffolkLITLab/docassemble-LITEfile"
+
+[tool.setuptools.packages.find]
+include = ["docassemble.LITEfile*"]
+where = [
+    ".",
+]
+
+[tool.setuptools.package-data]
+"docassemble.LITEfile" = ["data/questions/*.yml"]

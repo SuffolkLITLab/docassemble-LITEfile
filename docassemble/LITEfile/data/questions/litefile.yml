@@ -1,0 +1,109 @@
+---
+modules:
+  - .litefile
+---
+# Shared defaults and actions. Later interview blocks can override these names.
+code: |
+  litefile_config_name = "litefile"
+---
+code: |
+  litefile_bundle = al_court_bundle
+---
+code: |
+  litefile_download_event = "al_download"
+---
+code: |
+  litefile_transfer_id = litefile_source_id()
+---
+code: |
+  litefile_transfers = {}
+---
+variable name: litefile_filing_hint_overrides
+data:
+  counties: {}
+  courts: {}
+---
+code: |
+  litefile_upload_pending = False
+---
+objects:
+  - litefile_background: BackgroundAction
+---
+variable name: litefile_background_failure
+data:
+  ok: false
+  message: We could not complete the transfer. Try again to continue the same draft. Your forms are still available to download.
+---
+event: litefile_send
+code: |
+  litefile_transfer_key = url_args.get('litefile_correction', '') or 'initial'
+  if litefile_transfer_key not in litefile_transfers:
+    reconsider("litefile_data")
+    litefile_prepared = prepare_litefile_transfer(
+      litefile_data, litefile_bundle, litefile_document_map,
+      source_id=litefile_transfer_id,
+      return_url=interview_url()
+    )
+    if not litefile_prepared['ok']:
+      litefile_result = litefile_prepared
+      force_ask('litefile_result_screen')
+    litefile_transfers[litefile_transfer_key] = litefile_prepared
+  litefile_upload_pending = True
+  # Start the task while this action is still active. The initial block below
+  # resumes it after BackgroundAction's wait refresh.
+  litefile_result = litefile_background.run('litefile_upload') or litefile_background_failure
+  litefile_upload_pending = False
+  force_ask('litefile_result_screen')
+---
+# An initial block runs before the host interview's mandatory download screen,
+# so it survives BackgroundAction's wait refresh and displays the result.
+initial: True
+code: |
+  if litefile_upload_pending:
+    # The first wait response saves the prepared AssemblyLine cache before the
+    # worker reads it. A retry reuses the same PDFs and hashes.
+    litefile_result = litefile_background.run('litefile_upload') or litefile_background_failure
+    litefile_upload_pending = False
+    force_ask('litefile_result_screen')
+---
+event: litefile_upload
+code: |
+  background_response(send_litefile_transfer(
+    litefile_transfers[litefile_transfer_key],
+    config=get_config(litefile_config_name, {}),
+    correction_token=url_args.get('litefile_correction', '')
+  ))
+---
+event: litefile_result_screen
+question: |
+  % if litefile_result['ok']:
+  Your filing draft is saved
+  % else:
+  Your forms are still here
+  % endif
+subquestion: |
+  % if litefile_result['ok']:
+  Your forms and answers are saved in LITEFile. Continue there to complete any
+  missing filing details, review your documents, and submit them to court.
+  **Your forms have not been filed yet.**
+
+  ${ action_button_html(litefile_result['continue_url'], label='Continue in LITEFile', color='primary') }
+  % else:
+  ${ litefile_result['message'] }
+
+  ${ action_button_html(url_action('litefile_send'), label='Try again', color='primary') }
+  % endif
+
+  ${ action_button_html(url_action(litefile_download_event), label='Return to my forms', color='secondary') }
+---
+# Display ${ litefile_continue_button } on the interview download screen.
+template: litefile_continue_button
+content: |
+  % if get_config(litefile_config_name, {}).get('enabled', False):
+  ### Continue with electronic filing
+
+  Send your forms and the answers you already gave to LITEFile. You will review
+  the filing details there before anything is sent to the court.
+
+  ${ action_button_html(url_action('litefile_send'), label='Continue in LITEFile', color='primary') }
+  % endif
