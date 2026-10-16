@@ -129,8 +129,14 @@ replace court documents with a test sample to demonstrate successful delivery.
 
 Tests exercise the transport and shared YAML without a running court service.
 Run `python -m pytest -q` in an environment with Docassemble base, requests,
-PyYAML, and pytest installed. The RFA integration keeps its own form-mapping
-regression tests in its package.
+PyYAML, and pytest installed. Run the complete suite with
+`python -I -m pytest -q`. All LITEfile transport and workflow tests live here,
+including regressions using a captured RFA settings fixture. That fixture is
+an example, not a live test of the RFA package. Runtime form settings remain
+in the host interview.
+
+See [Adapting an interview for LITEfile](docs/interview-integration.md) for
+field mappings, court-specific hints, background actions, and correction flows.
 
 Extracted from [RFApackage PR #426](https://github.com/LSVermont/docassemble-RFApackage/pull/426).
 The original MIT attribution is preserved in LICENSE. No court account,

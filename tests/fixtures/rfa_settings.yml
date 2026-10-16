@@ -1,0 +1,101 @@
+# Example fixture captured from RFApackage commit 4ed5657.
+# Runtime form settings remain owned by RFApackage; this is a regression example.
+---
+include:
+  - docassemble.LITEfile:litefile.yml
+---
+# This later block overrides the shared return-to-download default.
+code: |
+  litefile_download_event = "RFApackage_download"
+---
+# showifdef reads existing answers without asking new interview questions.
+# All hints are semantic names. LITEFile resolves current court codes.
+variable name: litefile_data
+data from code:
+  schema_version: 1
+  jurisdiction: '"vermont"'
+  filing_intent: '"relief_from_abuse"'
+  filing_type_name_hints: '["Initial Filing"]'
+  case_category_name_hints: '["Family"]'
+  case_type_name_hints: |
+    ["Relief from Abuse on Behalf of a Minor"] if showifdef("who_needs_protection") == "order_obo_child" else ["Relief from Abuse"]
+  # No subtype default: let LITEFile ask if this court needs one.
+  case_subtype_name_hints: '[]'
+  filing_hint_overrides: litefile_filing_hint_overrides
+  case:
+    existing_case: 'False'
+    court_name: showifdef("trial_court.name")
+    county: showifdef("user_selected_county")
+    docket_number: showifdef("docket_number")
+  filer: litefile_person("users[0]")
+  parties:
+    - source: '"users[0]"'
+      person: litefile_person("users[0]")
+      semantic_role: '"plaintiff"'
+      case_side_hint: '"plaintiff"'
+      is_self: 'True'
+      is_filing_party: 'True'
+    - source: '"other_parties[0]"'
+      person: litefile_person("other_parties[0]")
+      semantic_role: '"defendant"'
+      case_side_hint: '"defendant"'
+  known_filing_facts:
+    who_needs_protection: showifdef("who_needs_protection", None)
+    users[0].is_form_filler: showifdef("users[0].is_form_filler", None)
+    children.target_number: showifdef("children.target_number", None)
+---
+# Keys are ALDocument variable names in al_court_bundle. Only enabled documents
+# are sent. Keep these IDs stable so PDF corrections update the same documents.
+variable name: litefile_document_map
+data:
+  RFAcomplaint:
+    role: lead
+    form_name: RFA Complaint
+    filing_type_name_hints:
+      - Initial Filing
+    document_type_name_hints: []
+    filing_component_name_hints:
+      - Lead Document
+  RFAcomplaintonbehalfofminor:
+    role: lead
+    form_name: RFA Complaint on behalf of a minor
+    filing_type_name_hints:
+      - Initial Filing
+    document_type_name_hints: []
+    filing_component_name_hints:
+      - Lead Document
+  RFAaffidavit:
+    role: supporting
+    form_name: RFA Affidavit
+    filing_type_name_hints:
+      - Affidavit
+    document_type_name_hints: []
+    filing_component_name_hints:
+      - Lead Document
+  RFAaffidavitonbehalfofminor:
+    role: supporting
+    form_name: RFA Affidavit on behalf of a minor
+    filing_type_name_hints:
+      - Affidavit
+    document_type_name_hints: []
+    filing_component_name_hints:
+      - Lead Document
+  RFAconfidentialcontactinfo:
+    role: supporting
+    form_name: Address for Notification
+    filing_type_name_hints:
+      - Relief from Abuse Litigant Address Form
+    document_type_name_hints:
+      - Confidential
+    filing_component_name_hints:
+      - Lead Document
+  RFAserviceinfo:
+    role: supporting
+    form_name: Protection Order Service Info
+    filing_type_name_hints:
+      - 'Protection Order Service Information DPS #132'
+    document_type_name_hints: []
+    filing_component_name_hints:
+      - Lead Document
+# Empty hint lists deliberately leave a choice to the filer. Optional services,
+# fees, and payment choices belong in LITEFile; the interview supplies no defaults.
